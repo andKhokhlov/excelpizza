@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ExcelPizza — учет взносов на пиццу</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --card: #1f2937;
+      --muted: #94a3b8;
+      --accent: #22c55e;
+      --accent-2: #10b981;
+      --danger: #ef4444;
+      --border: #1f2937;
+      --text: #e2e8f0;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 20% 20%, rgba(34,197,94,0.12), transparent 25%),
+                  radial-gradient(circle at 80% 0%, rgba(14,165,233,0.12), transparent 25%),
+                  var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+    h1 { margin: 0 0 6px; }
+    p.lead { margin: 0 0 18px; color: var(--muted); }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      gap: 18px;
+    }
+    .panel, .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      backdrop-filter: blur(6px);
+    }
+    .card { background: var(--card); }
+    .grid {
+      display: grid;
+      gap: 12px;
+    }
+    .grid.two { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-weight: 600;
+    }
+    input, select {
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #0b1220;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s, transform 0.1s;
+    }
+    input:focus, select:focus { border-color: var(--accent); }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    button {
+      border: none;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: true;
+      cursor: pointer;
+      color: #0b1220;
+      background: linear-gradient(120deg, var(--accent), var(--accent-2));
+      box-shadow: 0 10px 30px rgba(34,197,94,0.25);
+      transition: transform 0.1s, box-shadow 0.2s;
+    }
+    button.secondary {
+      background: #0b1220;
+      color: var(--text);
+      border: 1px solid var(--border);
+      box-shadow: none;
+    }
+    button.danger {
+      background: var(--danger);
+      color: #fff;
+      box-shadow: 0 10px 30px rgba(239,68,68,0.25);
+    }
+    button:active { transform: translateY(1px); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    th { color: var(--muted); font-weight: 600; }
+    tr:hover td { background: #0b1220; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0b1220;
+      background: var(--accent);
+    }
+    .muted { color: var(--muted); }
+    .number { font-variant-numeric: tabular-nums; }
+    @media (max-width: 700px) {
+      body { padding: 16px; }
+      table, thead { display: none; }
+      .row-card {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 10px;
+        background: #0b1220;
+      }
+      .row-card h4 { margin: 0 0 6px; }
+      .row-card p { margin: 4px 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>ExcelPizza — мини-учет</h1>
+      <p class="lead">Вечерняя пицца втроем: фиксируйте, сколько собрали с клиентов, сколько стоит заказ по чеку (себестоимость) и как делится прибыль на троих. Экспорт в Excel/Word с диаграммой.</p>
+    </header>
+
+    <section class="panel">
+      <div class="grid two">
+        <label>
+          Рабочий день (выберите дату — добавление/просмотр для этого дня)
+          <input id="activeDay" type="date">
+        </label>
+        <label>
+          Кто получил деньги за заказ (из троих)
+          <input id="name" type="text" placeholder="Например: Катя" autocomplete="name">
+        </label>
+        <label>
+          Сколько собрали с клиентов (продажа, ₽)
+          <input id="sent" type="number" step="0.01" min="0" placeholder="1200">
+        </label>
+        <label>
+          Себестоимость заказа по чеку (₽)
+          <input id="check" type="number" step="0.01" min="0" placeholder="900">
+        </label>
+      </div>
+      <div class="actions" style="margin-top:12px;">
+        <button id="addBtn">Добавить запись</button>
+        <button id="clearBtn" class="secondary">Очистить форму</button>
+        <button id="resetBtn" class="danger">Сбросить все данные</button>
+      </div>
+    </section>
+
+    <section class="grid two">
+      <div class="card">
+        <p class="muted">Собрали с клиентов</p>
+        <h2 id="sumSent" class="number">0</h2>
+      </div>
+      <div class="card">
+        <p class="muted">Себестоимость (чеки)</p>
+        <h2 id="sumChecks" class="number">0</h2>
+      </div>
+      <div class="card">
+        <p class="muted">Прибыль всего</p>
+        <h2 id="sumProfit" class="number">0</h2>
+      </div>
+      <div class="card">
+        <p class="muted">Прибыль на человека (делим на 3)</p>
+        <h2 id="sumShare" class="number">0</h2>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="actions" style="justify-content: space-between; align-items: center; gap: 12px;">
+        <div>
+          <strong>Записи</strong>
+          <span class="muted" id="countLabel"></span>
+        </div>
+        <div class="actions">
+          <button id="exportCsv">Скачать Excel (CSV)</button>
+          <button id="exportDoc" class="secondary">Скачать Word (DOC)</button>
+        </div>
+      </div>
+      <div id="tableWrapper"></div>
+    </section>
+
+    <section class="panel">
+      <div class="actions" style="justify-content: space-between; align-items: center;">
+        <div>
+          <strong>Диаграмма по людям</strong>
+          <p class="muted" style="margin:4px 0 0;">Сравнение: сколько собрали vs. доля прибыли (1/3)</p>
+        </div>
+        <span class="badge">Автообновление</span>
+      </div>
+      <canvas id="chart" height="120"></canvas>
+    </section>
+  </div>
+
+  <script>
+    const activeDayInput = document.getElementById('activeDay');
+    const nameInput = document.getElementById('name');
+    const sentInput = document.getElementById('sent');
+    const checkInput = document.getElementById('check');
+    const addBtn = document.getElementById('addBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const exportCsvBtn = document.getElementById('exportCsv');
+    const exportDocBtn = document.getElementById('exportDoc');
+    const tableWrapper = document.getElementById('tableWrapper');
+    const sumSentEl = document.getElementById('sumSent');
+    const sumChecksEl = document.getElementById('sumChecks');
+    const sumProfitEl = document.getElementById('sumProfit');
+    const sumShareEl = document.getElementById('sumShare');
+    const countLabel = document.getElementById('countLabel');
+
+    const STORAGE_KEY = 'excelpizza-entries';
+    const ACTIVE_DAY_KEY = 'excelpizza-active-day';
+    const TEAM_SIZE = 3;
+    let entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    let activeDay = localStorage.getItem(ACTIVE_DAY_KEY) || new Date().toISOString().slice(0,10);
+    let chartInstance;
+
+    activeDayInput.value = activeDay;
+
+    function normalizeEntries(list) {
+      return list.map((e) => {
+        // Миграция со старой версии (sent/check/delta) к новой (revenue/cost/profit/share).
+        if (e.sent !== undefined && e.check !== undefined && e.profit === undefined) {
+          const revenue = Number(e.sent);
+          const cost = Number(e.check);
+          const profit = revenue - cost;
+          const share = profit / TEAM_SIZE;
+          return {
+            name: e.name || '',
+            revenue,
+            cost,
+            profit,
+            share,
+            date: e.date || new Date().toISOString().slice(0, 10),
+          };
+        }
+        return e;
+      });
+    }
+
+    entries = normalizeEntries(entries);
+
+    const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    const formatMoney = (value) => `${Number(value).toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₽`;
+
+    const filteredEntries = () => entries.filter(e => e.date === activeDay);
+
+    function renderTable() {
+      const list = filteredEntries();
+      if (!list.length) {
+        tableWrapper.innerHTML = `<p class="muted" style="margin-top:12px;">За выбранный день (${activeDay}) нет записей — добавьте первую.</p>`;
+        countLabel.textContent = `(день: ${activeDay}, 0 шт.)`;
+        return;
+      }
+
+      countLabel.textContent = `(день: ${activeDay}, ${list.length} шт.)`;
+
+      const table = document.createElement('table');
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th>Кто получил</th>
+            <th>Собрали (продажа)</th>
+            <th>Себестоимость (чек)</th>
+            <th>Прибыль</th>
+            <th>Доля (прибыль/3)</th>
+            <th>Дата</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${list.map((e, idx) => `
+            <tr>
+              <td>${e.name || '—'}</td>
+              <td class="number">${formatMoney(e.revenue)}</td>
+              <td class="number">${formatMoney(e.cost)}</td>
+              <td class="number">${formatMoney(e.profit)}</td>
+              <td class="number">${formatMoney(e.share)}</td>
+              <td>${e.date}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      `;
+
+      if (window.innerWidth < 700) {
+        tableWrapper.innerHTML = list.map((e) => `
+          <div class="row-card">
+            <h4>${e.name || '—'}</h4>
+            <p>Собрали: <strong>${formatMoney(e.revenue)}</strong></p>
+            <p>Себестоимость: ${formatMoney(e.cost)}</p>
+            <p>Прибыль: ${formatMoney(e.profit)}</p>
+            <p>Доля (прибыль/3): ${formatMoney(e.share)}</p>
+            <p class="muted">${e.date}</p>
+          </div>
+        `).join('');
+      } else {
+        tableWrapper.innerHTML = '';
+        tableWrapper.appendChild(table);
+      }
+    }
+
+    function renderSummary() {
+      const list = filteredEntries();
+      const totalRevenue = list.reduce((s, e) => s + Number(e.revenue), 0);
+      const totalCost = list.reduce((s, e) => s + Number(e.cost), 0);
+      const totalProfit = list.reduce((s, e) => s + Number(e.profit), 0);
+      const totalShare = totalProfit / TEAM_SIZE;
+      sumSentEl.textContent = formatMoney(totalRevenue);
+      sumChecksEl.textContent = formatMoney(totalCost);
+      sumProfitEl.textContent = formatMoney(totalProfit);
+      sumShareEl.textContent = formatMoney(totalShare);
+    }
+
+    function renderChart() {
+      const aggregated = filteredEntries().reduce((acc, e) => {
+        const key = e.name || 'Без имени';
+        if (!acc[key]) acc[key] = {revenue: 0, profitShare: 0};
+        acc[key].revenue += Number(e.revenue);
+        acc[key].profitShare += Number(e.share);
+        return acc;
+      }, {});
+
+      const labels = Object.keys(aggregated);
+      const revenueData = labels.map(l => aggregated[l].revenue);
+      const shareData = labels.map(l => aggregated[l].profitShare);
+
+      const ctx = document.getElementById('chart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Собрали (продажа)',
+              data: revenueData,
+              backgroundColor: 'rgba(34,197,94,0.6)',
+            },
+            {
+              label: 'Доля прибыли (прибыль/3)',
+              data: shareData,
+              backgroundColor: 'rgba(59,130,246,0.6)',
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: '#e2e8f0' } } },
+          scales: {
+            x: { ticks: { color: '#cbd5e1' } },
+            y: { ticks: { color: '#cbd5e1' }, beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    function addEntry() {
+      const name = nameInput.value.trim();
+      const revenue = Number(sentInput.value);
+      const cost = Number(checkInput.value);
+      const date = activeDay || new Date().toISOString().slice(0,10);
+
+      if (Number.isNaN(revenue) || Number.isNaN(cost) || revenue <= 0 || cost <= 0) {
+        alert('Введите корректные суммы для \"Собрали\" и \"Себестоимость\" (больше 0).');
+        return;
+      }
+
+      const profit = revenue - cost;
+      const share = profit / TEAM_SIZE;
+
+      entries.push({ name, revenue, cost, profit, share, date });
+      save();
+      renderTable();
+      renderSummary();
+      renderChart();
+      clearForm();
+    }
+
+    function clearForm() {
+      nameInput.value = '';
+      sentInput.value = '';
+      checkInput.value = '';
+      activeDayInput.value = activeDay;
+      nameInput.focus();
+    }
+
+    function resetAll() {
+      if (!confirm('Удалить все записи?')) return;
+      entries = [];
+      save();
+      activeDay = new Date().toISOString().slice(0,10);
+      activeDayInput.value = activeDay;
+      localStorage.setItem(ACTIVE_DAY_KEY, activeDay);
+      renderTable();
+      renderSummary();
+      renderChart();
+    }
+
+    function download(filename, data, type) {
+      const blob = new Blob([data], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportCsv() {
+      const list = filteredEntries();
+      if (!list.length) return alert('Нет данных для экспорта по выбранному дню.');
+      const header = ['Имя','Собрали (продажа)','Себестоимость (чек)','Прибыль','Доля прибыли (1/3)','Дата'];
+      const rows = list.map(e => [e.name, e.revenue, e.cost, e.profit, e.share, e.date]);
+      const csv = [header, ...rows].map(r => r.map(val => `"${String(val).replace(/"/g, '""')}"`).join(';')).join('\\r\\n');
+      download(`excelpizza-${activeDay}.csv`, csv, 'text/csv;charset=utf-8;');
+    }
+
+    function exportDoc() {
+      const list = filteredEntries();
+      if (!list.length) return alert('Нет данных для экспорта по выбранному дню.');
+      const chartImage = chartInstance ? chartInstance.toBase64Image() : '';
+      const tableRows = list.map(e => `
+        <tr>
+          <td>${e.name || '—'}</td>
+          <td>${formatMoney(e.revenue)}</td>
+          <td>${formatMoney(e.cost)}</td>
+          <td>${formatMoney(e.profit)}</td>
+          <td>${formatMoney(e.share)}</td>
+          <td>${e.date}</td>
+        </tr>
+      `).join('');
+
+      const html = `
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>
+              body { font-family: Arial, sans-serif; }
+              table { border-collapse: collapse; width: 100%; }
+              th, td { border: 1px solid #ddd; padding: 8px; }
+              th { background: #f1f5f9; }
+            </style>
+          </head>
+          <body>
+            <h2>Отчет ExcelPizza</h2>
+            <p>День: ${activeDay}</p>
+            <p>Собрали с клиентов: ${sumSentEl.textContent}</p>
+            <p>Себестоимость: ${sumChecksEl.textContent}</p>
+            <p>Прибыль всего: ${sumProfitEl.textContent}</p>
+            <p>Прибыль на человека (делим на 3): ${sumShareEl.textContent}</p>
+            <h3>Таблица</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Имя</th>
+                  <th>Собрали</th>
+                  <th>Себестоимость</th>
+                  <th>Прибыль</th>
+                  <th>Доля прибыли (1/3)</th>
+                  <th>Дата</th>
+                </tr>
+              </thead>
+              <tbody>${tableRows}</tbody>
+            </table>
+            ${chartImage ? `<h3>Диаграмма</h3><img src="${chartImage}" style="max-width:700px;">` : ''}
+          </body>
+        </html>
+      `;
+      download('excelpizza.doc', html, 'application/msword');
+    }
+
+    addBtn.addEventListener('click', addEntry);
+    clearBtn.addEventListener('click', clearForm);
+    resetBtn.addEventListener('click', resetAll);
+    exportCsvBtn.addEventListener('click', exportCsv);
+    exportDocBtn.addEventListener('click', exportDoc);
+    activeDayInput.addEventListener('change', () => {
+      activeDay = activeDayInput.value || new Date().toISOString().slice(0,10);
+      localStorage.setItem(ACTIVE_DAY_KEY, activeDay);
+      renderTable();
+      renderSummary();
+      renderChart();
+      activeDayInput.value = activeDay;
+    });
+
+    renderTable();
+    renderSummary();
+    renderChart();
+  </script>
+</body>
+</html>
+
