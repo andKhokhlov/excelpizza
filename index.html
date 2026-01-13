@@ -248,7 +248,7 @@
     const SUPABASE_URL = 'https://brxlwjfaxvmujoyvxduk.supabase.co'; // TODO: подставьте свой Project URL
     const SUPABASE_ANON_KEY = 'sb_publishable_CcKRlRVDbqbuIVWCYUXoxA_2sjWcIKo';        // TODO: подставьте свой anon key
     const ROOM = 'pizza-room-1';                             // общий код-комната для вашей группы
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const ACTIVE_DAY_KEY = 'excelpizza-active-day';
     const TEAM_SIZE = 3;
@@ -273,7 +273,7 @@
     }
 
     async function loadFromCloud() {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('orders')
         .select('*')
         .eq('room', ROOM)
@@ -428,7 +428,7 @@
       currentDayCost = cost;
       currentDayPizzas = pizzas;
 
-      const { error } = await supabase.from('orders').insert([
+      const { error } = await supabaseClient.from('orders').insert([
         { room: ROOM, name, revenue, cost, pizzas, date }
       ]);
       if (error) {
@@ -450,7 +450,7 @@
 
     async function resetAll() {
       if (!confirm('Удалить все записи?')) return;
-      const { error } = await supabase.from('orders').delete().eq('room', ROOM);
+      const { error } = await supabaseClient.from('orders').delete().eq('room', ROOM);
       if (error) {
         alert('Не удалось очистить данные: ' + error.message);
         return;
