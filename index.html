@@ -249,6 +249,8 @@
       const SUPABASE_URL = 'https://brxlwjfaxvmujoyvxduk.supabase.co'; // TODO: подставьте свой Project URL
       const SUPABASE_ANON_KEY = 'sb_publishable_CcKRlRVDbqbuIVWCYUXoxA_2sjWcIKo';        // TODO: подставьте свой anon key
       const ROOM = 'pizza-room-1';                             // общий код-комната для вашей группы
+      const USE_LOCAL_FALLBACK = true;                         // включить локальный режим, пока чините Supabase
+      const LOCAL_KEY = 'excelpizza-local-entries';
       let supabaseClient = null;
 
       const ACTIVE_DAY_KEY = 'excelpizza-active-day';
@@ -258,13 +260,16 @@
       let currentDayCost = 0;
       let currentDayPizzas = 0;
       let chartInstance;
+      let useLocal = false;
 
       const formatMoney = (value) => `${Number(value).toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₽`;
+      const saveLocal = () => localStorage.setItem(LOCAL_KEY, JSON.stringify(entries));
 
       const filteredEntries = () => entries.filter(e => e.date === activeDay);
       activeDayInput.value = activeDay;
 
       function supabaseReady() {
+        if (useLocal) return true;
         if (supabaseClient) return true;
         alert('Supabase SDK не загрузился. Обновите страницу.');
         return false;
@@ -278,26 +283,30 @@
       return { metaCost: currentDayCost, metaPizzas: currentDayPizzas };
     }
 
-    async function loadFromCloud() {
-      if (!supabaseReady()) return;
-      const { data, error } = await supabaseClient
-        .from('orders')
-        .select('*')
-        .eq('room', ROOM)
-        .order('date', { ascending: true })
-        .order('created_at', { ascending: true });
-      if (error) {
-        console.error('Supabase load error:', error);
-        alert('Не удалось загрузить данные из облака.');
-        return;
+      async function loadFromCloud() {
+        if (useLocal || !supabaseReady()) {
+          entries = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
+        } else {
+          const { data, error } = await supabaseClient
+            .from('orders')
+            .select('*')
+            .eq('room', ROOM)
+            .order('date', { ascending: true })
+            .order('created_at', { ascending: true });
+          if (error) {
+            console.error('Supabase load error:', error);
+            alert('Не удалось загрузить данные из облака.');
+            return;
+          }
+          entries = data || [];
+          saveLocal();
+        }
+        // обновляем мета-поля дня для текущего выбранного дня
+        pickDayMeta(filteredEntries());
+        renderTable();
+        renderSummary();
+        renderChart();
       }
-      entries = data || [];
-      // обновляем мета-поля дня для текущего выбранного дня
-      pickDayMeta(filteredEntries());
-      renderTable();
-      renderSummary();
-      renderChart();
-    }
 
     function renderTable() {
       const list = filteredEntries();
@@ -436,12 +445,17 @@
       currentDayCost = cost;
       currentDayPizzas = pizzas;
 
-      const { error } = await supabaseClient.from('orders').insert([
-        { room: ROOM, name, revenue, cost, pizzas, date }
-      ]);
-      if (error) {
-        alert('Не удалось сохранить: ' + error.message);
-        return;
+        if (useLocal) {
+          entries.push({ room: ROOM, name, revenue, cost, pizzas, date });
+          saveLocal();
+        } else {
+          const { error } = await supabaseClient.from('orders').insert([
+            { room: ROOM, name, revenue, cost, pizzas, date }
+          ]);
+          if (error) {
+            alert('Не удалось сохранить: ' + error.message);
+            return;
+          }
       }
 
       await loadFromCloud();
@@ -459,12 +473,18 @@
     async function resetAll() {
       if (!supabaseReady()) return;
       if (!confirm('Удалить все записи?')) return;
-      const { error } = await supabaseClient.from('orders').delete().eq('room', ROOM);
-      if (error) {
-        alert('Не удалось очистить данные: ' + error.message);
-        return;
+        if (useLocal) {
+          entries = [];
+          saveLocal();
+        } else {
+          const { error } = await supabaseClient.from('orders').delete().eq('room', ROOM);
+          if (error) {
+            alert('Не удалось очистить данные: ' + error.message);
+            return;
+          }
+          entries = [];
+          saveLocal();
       }
-      entries = [];
       activeDay = new Date().toISOString().slice(0,10);
       activeDayInput.value = activeDay;
       localStorage.setItem(ACTIVE_DAY_KEY, activeDay);
@@ -552,15 +572,21 @@
       download('excelpizza.doc', html, 'application/msword');
     }
 
-    function initSupabase() {
-      if (window.supabase && window.supabase.createClient) {
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        loadFromCloud();
-      } else {
-        console.error('Supabase SDK не доступен на window.supabase');
-        alert('Supabase SDK не загрузился. Попробуйте обновить страницу.');
+      function initSupabase() {
+        if (USE_LOCAL_FALLBACK) {
+          useLocal = true;
+          loadFromCloud();
+          return;
+        }
+        if (window.supabase && window.supabase.createClient) {
+          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          loadFromCloud();
+        } else {
+          console.error('Supabase SDK не доступен на window.supabase, включаю локальный режим');
+          useLocal = true;
+          loadFromCloud();
+        }
       }
-    }
 
     addBtn.addEventListener('click', addEntry);
     clearBtn.addEventListener('click', clearForm);
