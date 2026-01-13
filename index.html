@@ -227,42 +227,48 @@
   </div>
 
   <script>
-    const activeDayInput = document.getElementById('activeDay');
-    const nameInput = document.getElementById('name');
-    const sentInput = document.getElementById('sent');
-    const checkInput = document.getElementById('check');
-    const pizzasInput = document.getElementById('pizzas');
-    const addBtn = document.getElementById('addBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const exportCsvBtn = document.getElementById('exportCsv');
-    const exportDocBtn = document.getElementById('exportDoc');
-    const tableWrapper = document.getElementById('tableWrapper');
-    const sumSentEl = document.getElementById('sumSent');
-    const sumChecksEl = document.getElementById('sumChecks');
-    const sumProfitEl = document.getElementById('sumProfit');
-    const sumShareEl = document.getElementById('sumShare');
-    const sumPizzasEl = document.getElementById('sumPizzas');
-    const countLabel = document.getElementById('countLabel');
+    function initApp() {
+      const activeDayInput = document.getElementById('activeDay');
+      const nameInput = document.getElementById('name');
+      const sentInput = document.getElementById('sent');
+      const checkInput = document.getElementById('check');
+      const pizzasInput = document.getElementById('pizzas');
+      const addBtn = document.getElementById('addBtn');
+      const clearBtn = document.getElementById('clearBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      const exportCsvBtn = document.getElementById('exportCsv');
+      const exportDocBtn = document.getElementById('exportDoc');
+      const tableWrapper = document.getElementById('tableWrapper');
+      const sumSentEl = document.getElementById('sumSent');
+      const sumChecksEl = document.getElementById('sumChecks');
+      const sumProfitEl = document.getElementById('sumProfit');
+      const sumShareEl = document.getElementById('sumShare');
+      const sumPizzasEl = document.getElementById('sumPizzas');
+      const countLabel = document.getElementById('countLabel');
 
-    const SUPABASE_URL = 'https://brxlwjfaxvmujoyvxduk.supabase.co'; // TODO: подставьте свой Project URL
-    const SUPABASE_ANON_KEY = 'sb_publishable_CcKRlRVDbqbuIVWCYUXoxA_2sjWcIKo';        // TODO: подставьте свой anon key
-    const ROOM = 'pizza-room-1';                             // общий код-комната для вашей группы
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const SUPABASE_URL = 'https://brxlwjfaxvmujoyvxduk.supabase.co'; // TODO: подставьте свой Project URL
+      const SUPABASE_ANON_KEY = 'sb_publishable_CcKRlRVDbqbuIVWCYUXoxA_2sjWcIKo';        // TODO: подставьте свой anon key
+      const ROOM = 'pizza-room-1';                             // общий код-комната для вашей группы
+      let supabaseClient = null;
 
-    const ACTIVE_DAY_KEY = 'excelpizza-active-day';
-    const TEAM_SIZE = 3;
-    let entries = [];
-    let activeDay = localStorage.getItem(ACTIVE_DAY_KEY) || new Date().toISOString().slice(0,10);
-    let currentDayCost = 0;
-    let currentDayPizzas = 0;
-    let chartInstance;
+      const ACTIVE_DAY_KEY = 'excelpizza-active-day';
+      const TEAM_SIZE = 3;
+      let entries = [];
+      let activeDay = localStorage.getItem(ACTIVE_DAY_KEY) || new Date().toISOString().slice(0,10);
+      let currentDayCost = 0;
+      let currentDayPizzas = 0;
+      let chartInstance;
 
-    activeDayInput.value = activeDay;
+      const formatMoney = (value) => `${Number(value).toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₽`;
 
-    const formatMoney = (value) => `${Number(value).toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₽`;
+      const filteredEntries = () => entries.filter(e => e.date === activeDay);
+      activeDayInput.value = activeDay;
 
-    const filteredEntries = () => entries.filter(e => e.date === activeDay);
+      function supabaseReady() {
+        if (supabaseClient) return true;
+        alert('Supabase SDK не загрузился. Обновите страницу.');
+        return false;
+      }
 
     function pickDayMeta(list) {
       const metaCost = list.find(e => Number(e.cost) > 0)?.cost ?? currentDayCost ?? 0;
@@ -273,6 +279,7 @@
     }
 
     async function loadFromCloud() {
+      if (!supabaseReady()) return;
       const { data, error } = await supabaseClient
         .from('orders')
         .select('*')
@@ -401,6 +408,7 @@
     }
 
     async function addEntry() {
+      if (!supabaseReady()) return;
       const name = nameInput.value.trim();
       const revenue = Number(sentInput.value);
       const inputCost = Number(checkInput.value);
@@ -449,6 +457,7 @@
     }
 
     async function resetAll() {
+      if (!supabaseReady()) return;
       if (!confirm('Удалить все записи?')) return;
       const { error } = await supabaseClient.from('orders').delete().eq('room', ROOM);
       if (error) {
@@ -543,6 +552,16 @@
       download('excelpizza.doc', html, 'application/msword');
     }
 
+    function initSupabase() {
+      if (window.supabase && window.supabase.createClient) {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        loadFromCloud();
+      } else {
+        console.error('Supabase SDK не доступен на window.supabase');
+        alert('Supabase SDK не загрузился. Попробуйте обновить страницу.');
+      }
+    }
+
     addBtn.addEventListener('click', addEntry);
     clearBtn.addEventListener('click', clearForm);
     resetBtn.addEventListener('click', resetAll);
@@ -557,7 +576,18 @@
       activeDayInput.value = activeDay;
     });
 
-    loadFromCloud();
+    if (document.readyState === 'complete') {
+      initSupabase();
+    } else {
+      window.addEventListener('load', initSupabase);
+    }
+    }
+
+    if (document.readyState === 'complete') {
+      initApp();
+    } else {
+      window.addEventListener('load', initApp);
+    }
   </script>
 </body>
 </html>
