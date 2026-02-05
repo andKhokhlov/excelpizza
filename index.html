@@ -11,32 +11,34 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <style>
     :root {
-      --bg: #0f172a;
-      --panel: #111827;
-      --card: #1f2937;
-      --muted: #94a3b8;
-      --accent: #22c55e;
-      --accent-2: #10b981;
-      --danger: #ef4444;
-      --border: #1f2937;
-      --text: #e2e8f0;
-      --radius: 12px;
+      --bg: #f7f7fb;
+      --panel: #ffffff;
+      --card: #ffffff;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --accent-2: #22c55e;
+      --danger: #dc2626;
+      --border: #e5e7eb;
+      --text: #111827;
+      --radius: 16px;
+      --shadow: 0 10px 30px rgba(17,24,39,0.08);
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background: radial-gradient(circle at 20% 20%, rgba(34,197,94,0.12), transparent 25%),
-                  radial-gradient(circle at 80% 0%, rgba(14,165,233,0.12), transparent 25%),
-                  var(--bg);
+      background:
+        radial-gradient(circle at 0% 0%, rgba(37,99,235,0.08), transparent 35%),
+        radial-gradient(circle at 100% 0%, rgba(34,197,94,0.08), transparent 35%),
+        var(--bg);
       color: var(--text);
       min-height: 100vh;
-      padding: 24px;
+      padding: 28px;
     }
-    h1 { margin: 0 0 6px; }
+    h1 { margin: 0 0 6px; font-weight: 700; letter-spacing: -0.02em; }
     p.lead { margin: 0 0 18px; color: var(--muted); }
     .container {
-      max-width: 1100px;
+      max-width: 1080px;
       margin: 0 auto;
       display: grid;
       gap: 18px;
@@ -46,55 +48,86 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 18px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-      backdrop-filter: blur(6px);
+      box-shadow: var(--shadow);
     }
-    .card { background: var(--card); }
+    .card {
+      background: linear-gradient(180deg, #ffffff, #fafafa);
+    }
     .grid {
       display: grid;
       gap: 12px;
     }
     .grid.two { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+    .form-grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      align-items: end;
+    }
+    .form-grid .full { grid-column: 1 / -1; }
+    .form-grid .span-2 { grid-column: span 2; }
+    .form-grid .span-3 { grid-column: span 3; }
+    .form-section-title {
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 4px 0 0;
+    }
+    .form-card {
+      background: #f9fafb;
+      border: 1px dashed #e5e7eb;
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .actions.primary {
+      justify-content: flex-start;
+      margin-top: 12px;
+    }
     label {
       display: flex;
       flex-direction: column;
       gap: 6px;
       font-weight: 600;
+      color: #1f2937;
     }
     input, select {
-      padding: 12px;
-      border-radius: 10px;
+      padding: 12px 12px;
+      border-radius: 12px;
       border: 1px solid var(--border);
-      background: #0b1220;
+      background: #fff;
       color: var(--text);
       font-size: 14px;
       outline: none;
-      transition: border-color 0.15s, transform 0.1s;
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
     }
-    input:focus, select:focus { border-color: var(--accent); }
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+    }
     .actions { display: flex; flex-wrap: wrap; gap: 10px; }
     button {
       border: none;
       padding: 12px 16px;
-      border-radius: 10px;
+      border-radius: 12px;
       font-weight: 700;
-      cursor: true;
       cursor: pointer;
-      color: #0b1220;
-      background: linear-gradient(120deg, var(--accent), var(--accent-2));
-      box-shadow: 0 10px 30px rgba(34,197,94,0.25);
-      transition: transform 0.1s, box-shadow 0.2s;
+      color: #fff;
+      background: linear-gradient(120deg, var(--accent), #3b82f6);
+      box-shadow: 0 8px 18px rgba(37,99,235,0.25);
+      transition: transform 0.1s, box-shadow 0.2s, filter 0.2s;
     }
+    button:hover { filter: brightness(1.02); }
     button.secondary {
-      background: #0b1220;
-      color: var(--text);
+      background: #f3f4f6;
+      color: #111827;
       border: 1px solid var(--border);
       box-shadow: none;
     }
     button.danger {
-      background: var(--danger);
+      background: linear-gradient(120deg, #ef4444, var(--danger));
       color: #fff;
-      box-shadow: 0 10px 30px rgba(239,68,68,0.25);
+      box-shadow: 0 8px 18px rgba(220,38,38,0.2);
     }
     button:active { transform: translateY(1px); }
     table {
@@ -105,31 +138,41 @@
     }
     th, td {
       text-align: left;
-      padding: 10px;
+      padding: 12px 10px;
       border-bottom: 1px solid var(--border);
     }
-    th { color: var(--muted); font-weight: 600; }
-    tr:hover td { background: #0b1220; }
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      background: #fafafa;
+    }
+    tr:hover td { background: #f9fafb; }
     .badge {
       display: inline-block;
-      padding: 2px 8px;
+      padding: 4px 10px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: 700;
-      color: #0b1220;
-      background: var(--accent);
+      color: #1f2937;
+      background: #e0f2fe;
+      border: 1px solid #bae6fd;
     }
     .muted { color: var(--muted); }
     .number { font-variant-numeric: tabular-nums; }
+    @media (max-width: 900px) {
+      .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
     @media (max-width: 700px) {
       body { padding: 16px; }
+      .form-grid { grid-template-columns: 1fr; }
       table, thead { display: none; }
       .row-card {
         border: 1px solid var(--border);
-        border-radius: 12px;
+        border-radius: 14px;
         padding: 12px;
         margin-bottom: 10px;
-        background: #0b1220;
+        background: #fff;
+        box-shadow: 0 6px 14px rgba(17,24,39,0.06);
       }
       .row-card h4 { margin: 0 0 6px; }
       .row-card p { margin: 4px 0; }
@@ -144,34 +187,41 @@
     </header>
 
     <section class="panel">
-      <div class="grid two">
-        <label>
-          Рабочий день (выберите дату — добавление/просмотр для этого дня)
+      <div class="form-grid">
+        <div class="form-section-title full">День и заказ</div>
+        <label class="span-2">
+          Рабочий день (добавление/просмотр)
           <input id="activeDay" type="date">
         </label>
-        <label>
-          Кто отправил деньги (участник)
+        <label class="span-2">
+          Кто заказал пиццу
           <input id="name" type="text" placeholder="Например: Катя" autocomplete="name">
         </label>
-        <label>
-          Сумма чека за день (все пиццы, ₽)
-          <input id="check" type="number" step="0.01" min="0" placeholder="900">
-        </label>
-        <label>
-          Пицц всего за день (шт.)
-          <input id="pizzas" type="number" step="1" min="0" placeholder="6">
-        </label>
-        <label>
-          Кто отправил (имя)
-          <input id="name" type="text" placeholder="Например: Катя" autocomplete="name">
-        </label>
-        <label>
-          Сколько отправил (₽)
-          <input id="sent" type="number" step="0.01" min="0" placeholder="1200">
-        </label>
+
+        <div class="form-card span-2">
+          <div class="form-section-title">Параметры дня</div>
+          <div class="grid two" style="margin-top:10px;">
+            <label>
+              Сумма чека за день (₽)
+              <input id="check" type="number" step="0.01" min="0" placeholder="900">
+            </label>
+            <label>
+              Пицц всего (шт.)
+              <input id="pizzas" type="number" step="1" min="0" placeholder="6">
+            </label>
+          </div>
+        </div>
+
+        <div class="form-card span-2">
+          <div class="form-section-title">Оплата</div>
+          <label style="margin-top:10px;">
+            Сколько прислал (₽, можно позже)
+            <input id="sent" type="number" step="0.01" min="0" placeholder="1200">
+          </label>
+        </div>
       </div>
-      <div class="actions" style="margin-top:12px;">
-        <button id="addBtn">Добавить запись</button>
+      <div class="actions primary">
+        <button id="addBtn">Добавить заказчика/оплату</button>
         <button id="clearBtn" class="secondary">Очистить форму</button>
         <button id="resetBtn" class="danger">Сбросить все данные</button>
       </div>
@@ -276,7 +326,12 @@
       let chartInstance;
       let useLocal = false;
 
-      const formatMoney = (value) => `${Number(value).toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₽`;
+      const normalizeMoney = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
+      const formatMoney = (value) => {
+        const num = Number(value);
+        if (!Number.isFinite(num)) return '—';
+        return `${num.toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₽`;
+      };
 
       const filteredEntries = () => entries.filter(e => e.date === activeDay);
       activeDayInput.value = activeDay;
@@ -325,49 +380,106 @@
       const list = filteredEntries();
       if (!list.length) {
         tableWrapper.innerHTML = `<p class="muted" style="margin-top:12px;">За выбранный день (${activeDay}) нет записей — добавьте первую.</p>`;
-        countLabel.textContent = `(день: ${activeDay}, 0 шт.)`;
+        countLabel.textContent = `(день: ${activeDay}, заказов: 0, оплачено: 0)`;
         return;
       }
 
-      countLabel.textContent = `(день: ${activeDay}, ${list.length} шт.)`;
+      const paidList = list.filter(e => Number.isFinite(Number(e.revenue)) && Number(e.revenue) > 0);
+      countLabel.textContent = `(день: ${activeDay}, заказов: ${list.length}, оплачено: ${paidList.length})`;
 
-      const table = document.createElement('table');
-      table.innerHTML = `
-        <thead>
-          <tr>
-            <th>Кто отправил</th>
-            <th>Сколько отправил</th>
-            <th>Дата</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${list.map((e, idx) => `
-            <tr>
-              <td>${e.name || '—'}</td>
-              <td class="number">${formatMoney(e.revenue)}</td>
-              <td>${e.date}</td>
-            </tr>
-          `).join('')}
-        </tbody>
+      const ordersTable = `
+        <div style="margin-top: 12px;">
+          <strong>Заказчики</strong>
+          <table>
+            <thead>
+              <tr>
+                <th>Кто заказал</th>
+                <th>Оплата</th>
+                <th>Дата</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${list.map((e) => {
+                const paid = Number.isFinite(Number(e.revenue)) && Number(e.revenue) > 0;
+                return `
+                  <tr>
+                    <td>${e.name || '—'}</td>
+                    <td class="number">${paid ? formatMoney(e.revenue) : 'не оплатил'}</td>
+                    <td>${e.date}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      const paymentsTable = `
+        <div style="margin-top: 18px;">
+          <strong>Оплаты</strong>
+          <table>
+            <thead>
+              <tr>
+                <th>Кто оплатил</th>
+                <th>Сколько</th>
+                <th>Дата</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${paidList.length ? paidList.map((e) => `
+                <tr>
+                  <td>${e.name || '—'}</td>
+                  <td class="number">${formatMoney(e.revenue)}</td>
+                  <td>${e.date}</td>
+                </tr>
+              `).join('') : `
+                <tr>
+                  <td colspan="3" class="muted">Пока нет оплат</td>
+                </tr>
+              `}
+            </tbody>
+          </table>
+        </div>
       `;
 
       if (window.innerWidth < 700) {
-        tableWrapper.innerHTML = list.map((e) => `
+        const ordersCards = list.map((e) => {
+          const paid = Number.isFinite(Number(e.revenue)) && Number(e.revenue) > 0;
+          return `
+            <div class="row-card">
+              <h4>${e.name || '—'}</h4>
+              <p>Оплата: <strong>${paid ? formatMoney(e.revenue) : 'не оплатил'}</strong></p>
+              <p class="muted">${e.date}</p>
+            </div>
+          `;
+        }).join('');
+
+        const paymentsCards = paidList.length ? paidList.map((e) => `
           <div class="row-card">
             <h4>${e.name || '—'}</h4>
-            <p>Отправил: <strong>${formatMoney(e.revenue)}</strong></p>
+            <p>Оплатил: <strong>${formatMoney(e.revenue)}</strong></p>
             <p class="muted">${e.date}</p>
           </div>
-        `).join('');
+        `).join('') : `<p class="muted" style="margin-top:8px;">Пока нет оплат</p>`;
+
+        tableWrapper.innerHTML = `
+          <div style="margin-top: 12px;">
+            <strong>Заказчики</strong>
+            ${ordersCards}
+          </div>
+          <div style="margin-top: 18px;">
+            <strong>Оплаты</strong>
+            ${paymentsCards}
+          </div>
+        `;
       } else {
-        tableWrapper.innerHTML = '';
-        tableWrapper.appendChild(table);
+        tableWrapper.innerHTML = ordersTable + paymentsTable;
       }
     }
 
     function renderSummary() {
       const list = filteredEntries();
-      const totalRevenue = list.reduce((s, e) => s + Number(e.revenue), 0);
+      const totalRevenue = list.reduce((s, e) => s + normalizeMoney(e.revenue), 0);
       const { metaCost, metaPizzas } = pickDayMeta(list);
       const totalProfit = totalRevenue - metaCost;
       const totalShare = totalProfit / TEAM_SIZE;
@@ -382,14 +494,14 @@
     function renderChart() {
       const list = filteredEntries();
       const { metaCost } = pickDayMeta(list);
-      const totalRevenue = list.reduce((s, e) => s + Number(e.revenue), 0);
+      const totalRevenue = list.reduce((s, e) => s + normalizeMoney(e.revenue), 0);
       const profit = totalRevenue - metaCost;
       const sharePerPerson = profit / TEAM_SIZE;
 
       const aggregated = list.reduce((acc, e) => {
         const key = e.name || 'Без имени';
         if (!acc[key]) acc[key] = {revenue: 0, profitShare: 0};
-        acc[key].revenue += Number(e.revenue);
+        acc[key].revenue += normalizeMoney(e.revenue);
         acc[key].profitShare = sharePerPerson;
         return acc;
       }, {});
@@ -432,44 +544,74 @@
     async function addEntry() {
       if (!supabaseReady()) return;
       const name = nameInput.value.trim();
-      const revenue = Number(sentInput.value);
-      const inputCost = Number(checkInput.value);
-      const inputPizzas = Number(pizzasInput.value);
+      const revenueRaw = sentInput.value.trim();
+      const revenue = revenueRaw === '' ? null : Number(revenueRaw);
+      const inputCostRaw = checkInput.value.trim();
+      const inputPizzasRaw = pizzasInput.value.trim();
+      const inputCost = inputCostRaw === '' ? null : Number(inputCostRaw);
+      const inputPizzas = inputPizzasRaw === '' ? null : Number(inputPizzasRaw);
       const date = activeDay || new Date().toISOString().slice(0,10);
 
-      if (Number.isNaN(revenue) || revenue <= 0) {
-        alert('Введите, сколько отправил участник (больше 0).');
+      if (!name) {
+        alert('Введите имя заказчика.');
         return;
       }
 
-      // Определяем мета-для дня: если введено сейчас — используем; иначе берём сохранённое для дня
-      const cost = !Number.isNaN(inputCost) && inputCost > 0 ? inputCost : currentDayCost;
-      const pizzas = !Number.isNaN(inputPizzas) && inputPizzas >= 0 ? inputPizzas : currentDayPizzas;
-
-      if (!cost || cost <= 0) {
-        alert('Укажите сумму чека за день (все пиццы).');
-        return;
-      }
-      if (Number.isNaN(pizzas) || pizzas < 0) {
-        alert('Укажите количество пицц (0 или больше).');
+      if (revenue !== null && (Number.isNaN(revenue) || revenue < 0)) {
+        alert('Сумма оплаты должна быть 0 или больше, либо оставьте поле пустым.');
         return;
       }
 
-      currentDayCost = cost;
-      currentDayPizzas = pizzas;
+      if (inputCost !== null && (Number.isNaN(inputCost) || inputCost <= 0)) {
+        alert('Сумма чека должна быть больше 0.');
+        return;
+      }
 
-        if (useLocal) {
-          entries.push({ room: ROOM, name, revenue, cost, pizzas, date });
-          saveLocalEntries(entries);
+      if (inputPizzas !== null && (Number.isNaN(inputPizzas) || inputPizzas < 0)) {
+        alert('Количество пицц должно быть 0 или больше.');
+        return;
+      }
+
+      if (inputCost !== null) currentDayCost = inputCost;
+      if (inputPizzas !== null) currentDayPizzas = inputPizzas;
+
+      const existingIndex = entries.findIndex(e => e.date === date && (e.name || '').toLowerCase() === name.toLowerCase());
+      const existing = existingIndex >= 0 ? entries[existingIndex] : null;
+      const nextEntry = {
+        room: ROOM,
+        name,
+        revenue: revenue !== null ? revenue : (existing ? existing.revenue : null),
+        cost: currentDayCost,
+        pizzas: currentDayPizzas,
+        date
+      };
+
+      if (useLocal) {
+        if (existingIndex >= 0) {
+          entries[existingIndex] = nextEntry;
         } else {
-          const { error } = await supabaseClient.from('orders').insert([
-            { room: ROOM, name, revenue, cost, pizzas, date }
-          ]);
+          entries.push(nextEntry);
+        }
+        saveLocalEntries(entries);
+      } else {
+        if (existing && existing.id) {
+          const { error } = await supabaseClient.from('orders').update({
+            revenue: nextEntry.revenue,
+            cost: nextEntry.cost,
+            pizzas: nextEntry.pizzas
+          }).eq('id', existing.id);
+          if (error) {
+            alert('Не удалось обновить: ' + error.message);
+            return;
+          }
+        } else {
+          const { error } = await supabaseClient.from('orders').insert([nextEntry]);
           if (error) {
             alert('Не удалось сохранить: ' + error.message);
             return;
           }
         }
+      }
 
       await loadFromCloud();
       clearForm();
@@ -520,13 +662,16 @@
       const list = filteredEntries();
       if (!list.length) return alert('Нет данных для экспорта по выбранному дню.');
       const { metaCost, metaPizzas } = pickDayMeta(list);
-      const header = ['Имя','Сколько отправил','Дата'];
-      const rows = list.map(e => [e.name, e.revenue, e.date]);
+      const header = ['Имя','Оплата','Дата'];
+      const rows = list.map(e => {
+        const paid = Number.isFinite(Number(e.revenue)) && Number(e.revenue) > 0;
+        return [e.name, paid ? e.revenue : '', e.date];
+      });
       const meta = [
         ['День', activeDay],
         ['Сумма чека (день)', metaCost],
         ['Пицц всего', metaPizzas],
-        ['Собрали всего', list.reduce((s, e) => s + Number(e.revenue), 0)],
+        ['Собрали всего', list.reduce((s, e) => s + normalizeMoney(e.revenue), 0)],
       ];
       const csv = [meta, [['']], [header], rows]
         .flat()
@@ -540,13 +685,16 @@
       if (!list.length) return alert('Нет данных для экспорта по выбранному дню.');
       const { metaCost, metaPizzas } = pickDayMeta(list);
       const chartImage = chartInstance ? chartInstance.toBase64Image() : '';
-      const tableRows = list.map(e => `
-        <tr>
-          <td>${e.name || '—'}</td>
-          <td>${formatMoney(e.revenue)}</td>
-          <td>${e.date}</td>
-        </tr>
-      `).join('');
+      const tableRows = list.map(e => {
+        const paid = Number.isFinite(Number(e.revenue)) && Number(e.revenue) > 0;
+        return `
+          <tr>
+            <td>${e.name || '—'}</td>
+            <td>${paid ? formatMoney(e.revenue) : 'не оплатил'}</td>
+            <td>${e.date}</td>
+          </tr>
+        `;
+      }).join('');
 
       const html = `
         <html>
@@ -567,12 +715,12 @@
             <p>Собрали с клиентов: ${sumSentEl.textContent}</p>
             <p>Прибыль всего: ${sumProfitEl.textContent}</p>
             <p>Прибыль на человека (делим на 3): ${sumShareEl.textContent}</p>
-            <h3>Переводы</h3>
+            <h3>Заказчики</h3>
             <table>
               <thead>
                 <tr>
                   <th>Имя</th>
-                  <th>Сколько отправил</th>
+                  <th>Оплата</th>
                   <th>Дата</th>
                 </tr>
               </thead>
