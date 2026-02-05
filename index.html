@@ -255,15 +255,28 @@
 
       const ACTIVE_DAY_KEY = 'excelpizza-active-day';
       const TEAM_SIZE = 3;
+      const safeGetDay = () => {
+        try { return localStorage.getItem(ACTIVE_DAY_KEY) || new Date().toISOString().slice(0,10); }
+        catch (e) { console.warn('localStorage day read error', e); return new Date().toISOString().slice(0,10); }
+      };
+
+      const loadLocalEntries = () => {
+        try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]'); }
+        catch (e) { console.warn('localStorage read error', e); return []; }
+      };
+      const saveLocalEntries = (data) => {
+        try { localStorage.setItem(LOCAL_KEY, JSON.stringify(data)); }
+        catch (e) { console.warn('localStorage write error', e); }
+      };
+
       let entries = [];
-      let activeDay = localStorage.getItem(ACTIVE_DAY_KEY) || new Date().toISOString().slice(0,10);
+      let activeDay = safeGetDay();
       let currentDayCost = 0;
       let currentDayPizzas = 0;
       let chartInstance;
       let useLocal = false;
 
       const formatMoney = (value) => `${Number(value).toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₽`;
-      const saveLocal = () => localStorage.setItem(LOCAL_KEY, JSON.stringify(entries));
 
       const filteredEntries = () => entries.filter(e => e.date === activeDay);
       activeDayInput.value = activeDay;
@@ -285,7 +298,7 @@
 
       async function loadFromCloud() {
         if (useLocal || !supabaseReady()) {
-          entries = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
+          entries = loadLocalEntries();
         } else {
           const { data, error } = await supabaseClient
             .from('orders')
@@ -299,7 +312,7 @@
             return;
           }
           entries = data || [];
-          saveLocal();
+          saveLocalEntries(entries);
         }
         // обновляем мета-поля дня для текущего выбранного дня
         pickDayMeta(filteredEntries());
@@ -447,7 +460,7 @@
 
         if (useLocal) {
           entries.push({ room: ROOM, name, revenue, cost, pizzas, date });
-          saveLocal();
+          saveLocalEntries(entries);
         } else {
           const { error } = await supabaseClient.from('orders').insert([
             { room: ROOM, name, revenue, cost, pizzas, date }
@@ -456,7 +469,7 @@
             alert('Не удалось сохранить: ' + error.message);
             return;
           }
-      }
+        }
 
       await loadFromCloud();
       clearForm();
@@ -475,7 +488,7 @@
       if (!confirm('Удалить все записи?')) return;
         if (useLocal) {
           entries = [];
-          saveLocal();
+          saveLocalEntries(entries);
         } else {
           const { error } = await supabaseClient.from('orders').delete().eq('room', ROOM);
           if (error) {
@@ -483,11 +496,11 @@
             return;
           }
           entries = [];
-          saveLocal();
-      }
+          saveLocalEntries(entries);
+        }
       activeDay = new Date().toISOString().slice(0,10);
       activeDayInput.value = activeDay;
-      localStorage.setItem(ACTIVE_DAY_KEY, activeDay);
+        try { localStorage.setItem(ACTIVE_DAY_KEY, activeDay); } catch (e) { console.warn('localStorage day write error', e); }
       renderTable();
       renderSummary();
       renderChart();
@@ -602,11 +615,11 @@
       activeDayInput.value = activeDay;
     });
 
-    if (document.readyState === 'complete') {
-      initSupabase();
-    } else {
-      window.addEventListener('load', initSupabase);
-    }
+      if (document.readyState === 'complete') {
+        initSupabase();
+      } else {
+        window.addEventListener('load', initSupabase);
+      }
     }
 
     if (document.readyState === 'complete') {
